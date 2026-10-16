@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GIS Data Visualization</title>
+  <script>
+    window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1/Build/Cesium/";
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1/Build/Cesium/Cesium.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/cesium@1/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  <style>
+    @font-face {
+      font-family: "Anak Manja";
+      src: url("fonts/Anak Manja.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    html, body, #cesiumContainer {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #3c5c8c;
+    }
+
+    #rightPanels {
+      position: absolute;
+      top: 16px;
+      right: calc(16px + min(460px, 42vw) + 12px);
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+      max-height: calc(100% - 32px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 2px;
+      max-width: 280px;
+    }
+
+    #rightPanels > [hidden] {
+      display: none !important;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 4px;
+    }
+
+    .panel-head h3,
+    .panel-head summary {
+      margin: 0;
+      flex: 1;
+      min-width: 0;
+    }
+
+    details.hud-glass > .panel-dismiss {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
+    }
+
+    details.hud-glass > summary {
+      padding-right: 28px;
+      list-style: none;
+    }
+
+    details.hud-glass > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .panel-dismiss {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid rgba(245, 240, 232, 0.28);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(245, 240, 232, 0.7);
+      font: 14px/1 "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    .panel-dismiss:hover {
+      color: #fff;
+      border-color: rgba(245, 240, 232, 0.55);
+      background: rgba(245, 240, 232, 0.12);
+    }
+
+    /* Shared dark glass + drifting film grain (matches Filter / Stop spinning). */
+    .hud-glass {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      border: 1px solid rgba(245, 240, 232, 0.22);
+      border-radius: 4px;
+      background:
+        linear-gradient(160deg, rgba(18, 48, 78, 0.55) 0%, rgba(8, 24, 46, 0.82) 48%, rgba(6, 18, 36, 0.88) 100%),
+        rgba(10, 32, 58, 0.78);
+      backdrop-filter: blur(12px) saturate(1.15);
+      box-shadow:
+        0 1px 0 rgba(245, 240, 232, 0.06) inset,
+        0 8px 28px rgba(4, 16, 32, 0.45);
+      color: rgba(245, 240, 232, 0.92);
+      font-family: "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .hud-glass::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.22;
+      mix-blend-mode: soft-light;
+      background:
+        radial-gradient(ellipse 55% 40% at 20% 30%, rgba(180, 210, 240, 0.35), transparent 55%),
+        radial-gradient(ellipse 45% 50% at 80% 70%, rgba(212, 184, 150, 0.22), transparent 50%),
+        radial-gradient(ellipse 60% 35% at 50% 100%, rgba(94, 234, 212, 0.08), transparent 45%);
+      animation: hudGasDrift 14s ease-in-out infinite alternate;
+    }
+
+    .hud-glass::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.28;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.9 0 0 0 0 0.88 0 0 0 0 0.82 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 160px 160px;
+      animation: hudGrainShift 1.2s steps(4) infinite;
+    }
+
+    .hud-glass > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes hudGasDrift {
+      0% { transform: translate3d(-2%, -1%, 0) scale(1.02); }
+      50% { transform: translate3d(3%, 2%, 0) scale(1.06); }
+      100% { transform: translate3d(1%, -3%, 0) scale(1.03); }
+    }
+
+    @keyframes hudGrainShift {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(-2%, 1%); }
+      50% { transform: translate(1%, -2%); }
+      75% { transform: translate(-1%, -1%); }
+      100% { transform: translate(2%, 1%); }
+    }
+
+    #filters {
+      display: flex;
+      flex-direction: column;
+      flex: 0 0 auto;
+      gap: 6px;
+      padding: 12px;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      overflow: visible;
+    }
+
+    #filters h3 {
+      margin: 0 0 4px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.55);
+    }
+
+    #filters button {
+      padding: 8px 12px;
+      border: 1px solid rgba(245, 240, 232, 0.2);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(245, 240, 232, 0.88);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    #filters button:hover {
+      background: rgba(245, 240, 232, 0.1);
+      border-color: rgba(245, 240, 232, 0.4);
+      color: #fff;
+    }
+
+    #filters button.active,
+    #sequenceControls button.active {
+      border-color: rgba(245, 240, 232, 0.55);
+      background: rgba(245, 240, 232, 0.16);
+      color: #fff;
+    }
+
+    /* Curved key hugging the globe’s right limb — no card, no box. */
+    #oilLegend {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+      width: 280px;
+      height: 280px;
+      margin: 0;
+      padding: 0;
+      background: none;
+      box-shadow: none;
+      border: none;
+      /* Match ArcGIS / globe place labels: clean cartographic sans, not UI display face. */
+      font-family: "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #f5f0e8;
+      filter: drop-shadow(0 0.5px 1.5px rgba(12, 44, 84, 0.55));
+    }
+
+    body.legend-editing #oilLegend {
+      pointer-events: auto;
+      z-index: 20;
+    }
+
+    #oilLegend svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      perspective: 600px;
+    }
+
+    #oilLegend .legend-word-xform {
+      transform-box: fill-box;
+      transform-origin: center;
+      transform-style: preserve-3d;
+    }
+
+    #oilLegend .arc-caption {
+      fill: rgba(245, 240, 232, 0.96);
+      font-size: 2.45px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      paint-order: stroke fill;
+      stroke: rgba(8, 28, 56, 0.45);
+      stroke-width: 0.35px;
+    }
+
+    #oilLegend .arc-note {
+      fill: rgba(245, 240, 232, 0.65);
+      font-size: 2.2px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    #oilLegend .frame-label {
+      fill: rgba(245, 240, 232, 0.82);
+      font-size: 2.35px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+    }
+
+    #oilLegend .legend-part {
+      cursor: grab;
+    }
+
+    #oilLegend .legend-part.is-selected .legend-hit {
+      stroke: #ff9a1f;
+      stroke-width: 0.9;
+      stroke-dasharray: 1.2 0.8;
+      fill: rgba(255, 154, 31, 0.12);
+    }
+
+    #oilLegend .legend-handle {
+      fill: #ff9a1f;
+      stroke: #1a1a1a;
+      stroke-width: 0.35;
+      pointer-events: all;
+      cursor: grab;
+    }
+
+    #oilLegend .legend-rotate-ring {
+      stroke: rgba(255, 154, 31, 0.55);
+      pointer-events: stroke;
+      cursor: grab;
+    }
+
+    #oilLegend .legend-part.is-selected .legend-rotate-ring {
+      stroke: #ff9a1f;
+    }
+
+    #oilLegend .legend-handle.legend-rotate {
+      fill: #5eead4;
+    }
+
+    #oilLegend .legend-handle.legend-scale {
+      fill: #f2c88c;
+    }
+
+    #oilLegend .legend-handle:active,
+    body.legend-editing #oilLegend .legend-part:active {
+      cursor: grabbing;
+    }
+
+    #legendEditBar {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      bottom: 16px;
+      z-index: 22;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-sizing: border-box;
+      width: min(340px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(12, 28, 48, 0.92);
+      color: #f5f0e8;
+      font-family: "Anak Manja", system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      overflow: hidden;
+    }
+
+    #legendEditBar[hidden] {
+      display: none !important;
+    }
+
+    #legendEditBar .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    #legendEditBar button {
+      font: inherit;
+      letter-spacing: inherit;
+      padding: 4px 10px;
+      border: 1px solid rgba(245, 240, 232, 0.35);
+      border-radius: 4px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    #legendEditBar button:hover {
+      border-color: #ff9a1f;
+      color: #ff9a1f;
+    }
+
+    #legendEditReadout {
+      margin: 0;
+      flex: 0 1 auto;
+      max-height: 18vh;
+      overflow: auto;
+      font-size: 10px;
+      line-height: 1.35;
+      color: rgba(245, 240, 232, 0.78);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    #legendWordFields {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    #legendWordFields[hidden] {
+      display: none !important;
+    }
+
+    #legendWordFields .field {
+      display: grid;
+      grid-template-columns: 72px 1fr 52px;
+      gap: 6px;
+      align-items: center;
+      font-size: 11px;
+    }
+
+    #legendWordFields .field span {
+      color: rgba(245, 240, 232, 0.7);
+      letter-spacing: 0.06em;
+    }
+
+    #legendWordFields input[type="range"] {
+      width: 100%;
+    }
+
+    #legendWordFields input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 2px 4px;
+      border: 1px solid rgba(245, 240, 232, 0.25);
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.25);
+      color: #f5f0e8;
+      font: inherit;
+    }
+
+    #legendWordFields .toggle-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    #legendEditHelp {
+      margin: 0;
+      flex-shrink: 0;
+      font-size: 11px;
+      line-height: 1.35;
+      color: rgba(245, 240, 232, 0.62);
+    }
+
+    #oilDetail {
+      position: absolute;
+      right: 16px;
+      bottom: 40px;
+      z-index: 12;
+      box-sizing: border-box;
+      width: min(320px, calc(100vw - 32px));
+      max-height: min(42vh, 360px);
+      overflow-y: auto;
+      padding: 14px 16px 12px;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+
+    #oilDetail h3 {
+      margin: 0 28px 6px 0;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.95);
+    }
+
+    #oilDetail .oil-detail-meta,
+    #oilDetail .oil-detail-split {
+      margin: 0 0 4px;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: rgba(245, 240, 232, 0.7);
+    }
+
+    #oilDetail .oil-detail-note {
+      margin: 8px 0 10px;
+      font-size: 11px;
+      line-height: 1.4;
+      letter-spacing: 0.04em;
+      color: rgba(245, 240, 232, 0.45);
+    }
+
+    #oilDetail .oil-detail-links {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    #oilDetail .oil-detail-links li {
+      margin: 0 0 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(245, 240, 232, 0.12);
+    }
+
+    #oilDetail .oil-detail-links li:last-child {
+      border-bottom: 0;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    #oilDetail .oil-detail-links a {
+      color: #d4b896;
+      text-decoration: none;
+      font-size: 12px;
+      line-height: 1.35;
+      letter-spacing: 0.03em;
+    }
+
+    #oilDetail .oil-detail-links a:hover {
+      text-decoration: underline;
+      color: #f5f0e8;
+    }
+
+    #oilDetail .oil-detail-links span {
+      display: block;
+      margin-top: 2px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.4);
+    }
+
+    #oilDetail .oil-detail-close {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      border: 0;
+      background: transparent;
+      color: rgba(245, 240, 232, 0.5);
+      font: 22px/1 sans-serif;
+      cursor: pointer;
+    }
+
+    #oilDetail .oil-detail-close:hover {
+      color: #f5f0e8;
+    }
+
+    #oilLegend .trade-glow {
+      opacity: 0.2;
+    }
+
+    #oilLegend .trade-core {
+      opacity: 0.92;
+    }
+
+    #appearance {
+      min-height: 0;
+      flex: 1 1 auto;
+      max-height: min(42vh, 420px);
+    }
+
+    #shot, #sequences {
+      min-height: 0;
+      flex: 0 1 auto;
+      max-height: min(28vh, 260px);
+    }
+
+    #appearance, #shot, #sequences {
+      box-sizing: border-box;
+      width: 264px;
+      overflow-y: auto;
+      padding: 12px;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+
+    #appearance [hidden], #shot [hidden], #sequences [hidden] {
+      display: none !important;
+    }
+
+    #appearance summary, #shot summary, #sequences summary {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.7);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #sequenceControls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    #sequenceControls button {
+      padding: 8px 12px;
+      border: 1px solid rgba(245, 240, 232, 0.2);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(245, 240, 232, 0.88);
+      font: inherit;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    #sequenceControls button:hover {
+      background: rgba(245, 240, 232, 0.1);
+      border-color: rgba(245, 240, 232, 0.4);
+    }
+
+    #appearance h4, #shot h4 {
+      margin: 14px 0 6px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(212, 184, 150, 0.85);
+    }
+
+    #colorWheel {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 4px auto 8px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle closest-side, #fff, transparent),
+        conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    #colorWheel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: #000;
+      opacity: var(--darkness, 0);
+      pointer-events: none;
+    }
+
+    #wheelHandle {
+      position: absolute;
+      z-index: 1;
+      width: 14px;
+      height: 14px;
+      margin: -9px 0 0 -9px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px #000, 0 1px 4px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+    }
+
+    .color-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    #swatch {
+      width: 28px;
+      height: 28px;
+      border: 1px solid rgba(245, 240, 232, 0.3);
+      border-radius: 2px;
+    }
+
+    #pickedSwatch {
+      width: 28px;
+      height: 28px;
+      border: 1px solid rgba(245, 240, 232, 0.3);
+      border-radius: 2px;
+    }
+
+    #pickedHex {
+      flex: 1;
+      font: 13px ui-monospace, monospace;
+      color: rgba(245, 240, 232, 0.85);
+    }
+
+    #pickerMessage {
+      margin: 6px 0 0;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: #f0a090;
+    }
+
+    .small-button,
+    .wide-button {
+      padding: 6px 10px;
+      border: 1px solid rgba(245, 240, 232, 0.22);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(245, 240, 232, 0.9);
+      font: inherit;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .wide-button {
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .small-button:hover,
+    .wide-button:hover {
+      background: rgba(245, 240, 232, 0.12);
+      border-color: rgba(245, 240, 232, 0.45);
+    }
+
+    #hexInput {
+      flex: 1;
+      min-width: 0;
+      padding: 5px 8px;
+      border: 1px solid rgba(245, 240, 232, 0.22);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #f5f0e8;
+      font: 13px ui-monospace, monospace;
+    }
+
+    #appearance label, #shot label {
+      display: grid;
+      grid-template-columns: 88px 1fr minmax(38px, auto);
+      gap: 6px;
+      align-items: center;
+      margin: 4px 0;
+      color: rgba(245, 240, 232, 0.82);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+
+    #appearance label.toggle, #shot label.toggle {
+      grid-template-columns: auto 1fr;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    #shot label {
+      grid-template-columns: 100px 1fr 50px;
+      white-space: nowrap;
+    }
+
+    #shot input[type="number"] {
+      box-sizing: border-box;
+      width: 50px;
+      padding: 2px 4px;
+      border: 1px solid rgba(245, 240, 232, 0.22);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #f5f0e8;
+      font: 12px ui-monospace, monospace;
+    }
+
+    #shot .note, #sequences .note {
+      margin: 4px 0 0;
+      font-size: 11px;
+      line-height: 1.5;
+      letter-spacing: 0.04em;
+      color: rgba(245, 240, 232, 0.5);
+    }
+
+    #editMode + span,
+    #legendEditMode + span {
+      color: #e8b86a;
+    }
+
+    #objectOrigin {
+      position: absolute;
+      z-index: 6;
+      width: 8px;
+      height: 8px;
+      margin: -5px 0 0 -5px;
+      border: 1px solid #000;
+      border-radius: 50%;
+      background: #ff9a1f;
+      pointer-events: none;
+    }
+
+    #modalStatus {
+      position: absolute;
+      left: 50%;
+      bottom: 16px;
+      z-index: 10;
+      transform: translateX(-50%);
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font: 13px ui-monospace, monospace;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    body.editing #cesiumContainer canvas {
+      cursor: move;
+    }
+
+    #appearance input[type="color"] {
+      width: 100%;
+      height: 26px;
+      padding: 0;
+      border: 1px solid rgba(245, 240, 232, 0.25);
+      border-radius: 2px;
+      background: none;
+      cursor: pointer;
+    }
+
+    #appearance input[type="range"], #shot input[type="range"] {
+      width: 100%;
+      accent-color: #d4b896;
+    }
+
+    #appearance output, #shot output {
+      font: 12px ui-monospace, monospace;
+      text-align: right;
+      color: rgba(245, 240, 232, 0.55);
+    }
+
+    #thirdsGrid {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    body:has(#thirdsToggle:checked) #thirdsGrid {
+      display: block;
+    }
+
+    #thirdsGrid span {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    }
+
+    #thirdsGrid .vertical {
+      top: 0;
+      bottom: 0;
+      width: 1px;
+    }
+
+    #thirdsGrid .horizontal {
+      left: 0;
+      right: 0;
+      height: 1px;
+    }
+
+    #modelCredit {
+      position: absolute;
+      right: 12px;
+      bottom: 8px;
+      z-index: 10;
+      font-family: "Anak Manja", system-ui, sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+    }
+
+    #modelCredit:hover {
+      color: #fff;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .actions button {
+      flex: 1;
+      padding: 7px 6px;
+      border: 1px solid rgba(245, 240, 232, 0.22);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(245, 240, 232, 0.9);
+      font: inherit;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .actions button:hover {
+      background: rgba(245, 240, 232, 0.12);
+      border-color: rgba(245, 240, 232, 0.45);
+    }
+
+    /* Left limb HUD — same cartographic sans as globe place labels. */
+    #globeHud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      z-index: 11;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: min(300px, calc(100vw - 36px));
+      max-height: calc(100% - 32px);
+      font-family: "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #f5f0e8;
+      filter: drop-shadow(0 1px 2px rgba(8, 28, 56, 0.65));
+      pointer-events: none;
+    }
+
+    #globeHud > * {
+      pointer-events: auto;
+    }
+
+    #globeHud .hud-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #globeHud .hud-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.92);
+    }
+
+    #globeHud .hud-check input {
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      border: 1.5px solid rgba(245, 240, 232, 0.75);
+      border-radius: 2px;
+      background: rgba(12, 44, 84, 0.35);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    #globeHud .hud-check input:checked {
+      background: rgba(245, 240, 232, 0.92);
+      box-shadow: inset 0 0 0 3px rgba(12, 44, 84, 0.85);
+    }
+
+    #globeHud .hud-check:hover {
+      color: #fff;
+    }
+
+    #filterToggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid rgba(245, 240, 232, 0.35);
+      border-radius: 2px;
+      background: rgba(12, 44, 84, 0.42);
+      color: rgba(245, 240, 232, 0.95);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    #filterToggle:hover,
+    #filterToggle[aria-expanded="true"] {
+      background: rgba(12, 44, 84, 0.62);
+      border-color: rgba(245, 240, 232, 0.55);
+    }
+
+    #filterToggle .filter-badge {
+      min-width: 1.4em;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(245, 240, 232, 0.18);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-align: center;
+    }
+
+    #filterToggle .filter-badge:empty,
+    #filterToggle .filter-badge[data-count="0"] {
+      display: none;
+    }
+
+    #oilFilterPanel {
+      box-sizing: border-box;
+      width: min(292px, calc(100vw - 36px));
+      max-height: min(72vh, 560px);
+      overflow: auto;
+      padding: 14px 14px 12px;
+      border: 1px solid rgba(245, 240, 232, 0.22);
+      border-radius: 4px;
+      background: rgba(10, 32, 58, 0.88);
+      backdrop-filter: blur(10px);
+      color: rgba(245, 240, 232, 0.92);
+      scrollbar-width: thin;
+    }
+
+    #oilFilterPanel[hidden] {
+      display: none !important;
+    }
+
+    #oilFilterPanel .filter-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    #oilFilterPanel .filter-head h3 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.7);
+    }
+
+    #oilFilterPanel .filter-ghost {
+      border: 0;
+      background: transparent;
+      color: rgba(245, 240, 232, 0.55);
+      font: inherit;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    #oilFilterPanel .filter-ghost:hover {
+      color: #fff;
+    }
+
+    #oilFilterPanel .filter-section {
+      margin: 0 0 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(245, 240, 232, 0.12);
+    }
+
+    #oilFilterPanel .filter-section:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    #oilFilterPanel .filter-label {
+      display: block;
+      margin: 0 0 7px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.5);
+    }
+
+    #oilFilterSearch {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid rgba(245, 240, 232, 0.22);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #f5f0e8;
+      font: inherit;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      outline: none;
+    }
+
+    #oilFilterSearch::placeholder {
+      color: rgba(245, 240, 232, 0.35);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    #oilFilterSearch:focus {
+      border-color: rgba(245, 240, 232, 0.5);
+    }
+
+    #oilFilterPanel .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    #oilFilterPanel .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border: 1px solid rgba(245, 240, 232, 0.2);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(245, 240, 232, 0.72);
+      font: inherit;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    #oilFilterPanel .chip.on {
+      border-color: rgba(245, 240, 232, 0.55);
+      background: rgba(245, 240, 232, 0.12);
+      color: #fff;
+    }
+
+    #oilFilterPanel .chip .swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    #oilFilterPanel .radio-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    #oilFilterPanel .radio-row label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      color: rgba(245, 240, 232, 0.78);
+    }
+
+    #oilFilterPanel .radio-row input {
+      accent-color: #f5f0e8;
+    }
+
+    #oilFilterPanel .range-row {
+      display: grid;
+      gap: 4px;
+    }
+
+    #oilFilterPanel .range-row output {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: rgba(245, 240, 232, 0.65);
+    }
+
+    #oilFilterPanel input[type="range"] {
+      width: 100%;
+      accent-color: #d4b896;
+    }
+
+    #oilFilterPanel .layer-toggles {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #oilFilterPanel .layer-toggles label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: rgba(245, 240, 232, 0.8);
+    }
+
+    #oilFilterPanel .layer-toggles input {
+      accent-color: #f5f0e8;
+    }
+
+    #oilFilterCountries {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 160px;
+      overflow: auto;
+      margin-top: 6px;
+    }
+
+    #oilFilterCountries label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 0;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      color: rgba(245, 240, 232, 0.82);
+    }
+
+    #oilFilterCountries label.dim {
+      opacity: 0.35;
+    }
+
+    #oilFilterCountries input {
+      accent-color: #f5f0e8;
+    }
+
+    #oilFilterMeta {
+      margin: 0 0 8px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.45);
+    }
+
+    #oilFilterHint {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.4;
+      letter-spacing: 0.04em;
+      color: rgba(245, 240, 232, 0.5);
+    }
+
+    /* Manga story page — full right column, translucent, interactive HTML charts. */
+    #rightPanels {
+      display: none !important;
+    }
+
+    #storyPage {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      bottom: 34px;
+      z-index: 9;
+      box-sizing: border-box;
+      width: min(520px, 46vw);
+      display: grid;
+      grid-template-rows: minmax(0, 0.88fr) minmax(0, 1.45fr) minmax(0, 1.12fr);
+      gap: 8px;
+      overflow: hidden;
+      pointer-events: none;
+      font-family: "Helvetica Neue", "Segoe UI", Helvetica, Arial, sans-serif;
+      color: rgba(245, 240, 232, 0.94);
+      opacity: 0;
+      transform: translateX(22px);
+      transition: opacity 0.55s ease, transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #storyPage.is-revealed {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    #storyPage.is-hidden {
+      opacity: 0;
+      transform: translateX(22px);
+      pointer-events: none;
+    }
+
+    .manga-panel {
+      position: relative;
+      box-sizing: border-box;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid rgba(245, 240, 232, 0.32);
+      background: rgba(8, 28, 52, 0.38);
+      backdrop-filter: blur(10px) saturate(1.05);
+      -webkit-backdrop-filter: blur(10px) saturate(1.05);
+      box-shadow:
+        0 1px 0 rgba(245, 240, 232, 0.08) inset,
+        0 8px 24px rgba(4, 16, 32, 0.28);
+      opacity: 0;
+      transform: translateY(16px) scale(0.98);
+      transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #storyPage.is-revealed .manga-panel {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .manga-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), transparent 42%);
+    }
+
+    .manga-panel .panel-inner {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .manga-panel-top .panel-inner {
+      padding: 14px 16px 12px;
+      justify-content: space-between;
+    }
+
+    .manga-panel-mid {
+      clip-path: polygon(0 6%, 100% 0, 100% 94%, 0 100%);
+    }
+
+    .manga-panel-mid .panel-inner {
+      padding: 18px 16px 20px;
+      justify-content: flex-start;
+      gap: 7px;
+    }
+
+    .manga-split {
+      display: grid;
+      grid-template-columns: 1.08fr 1fr;
+      gap: 8px;
+      min-height: 0;
+      opacity: 0;
+      transform: translateY(14px);
+      transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #storyPage.is-revealed .manga-split {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.32s;
+    }
+
+    .manga-panel-bl {
+      clip-path: polygon(0 0, 100% 7%, 94% 100%, 0 100%);
+    }
+
+    .manga-panel-br {
+      clip-path: polygon(6% 7%, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .manga-panel-bl .panel-inner {
+      padding: 14px 18px 12px 14px;
+    }
+
+    .manga-panel-br .panel-inner {
+      padding: 14px 14px 12px 18px;
+    }
+
+    #storyPage.is-revealed .manga-panel-top { transition-delay: 0.08s; }
+    #storyPage.is-revealed .manga-panel-mid { transition-delay: 0.22s; }
+    #storyPage.is-revealed .manga-panel-bl { transition-delay: 0.4s; }
+    #storyPage.is-revealed .manga-panel-br { transition-delay: 0.5s; }
+
+    .manga-kicker {
+      margin: 0;
+      flex: 0 0 auto;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(212, 184, 150, 0.9);
+    }
+
+    .manga-panel h2 {
+      margin: 0;
+      flex: 0 0 auto;
+      font-size: clamp(14px, 1.4vw, 18px);
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      line-height: 1.22;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.97);
+    }
+
+    .manga-panel-top h2 {
+      font-size: clamp(16px, 1.7vw, 22px);
+      letter-spacing: 0.09em;
+    }
+
+    .manga-panel p {
+      margin: 0;
+      font-size: clamp(11px, 1.05vw, 13px);
+      line-height: 1.45;
+      letter-spacing: 0.015em;
+      color: rgba(245, 240, 232, 0.78);
+    }
+
+    .manga-lede {
+      color: rgba(245, 240, 232, 0.86) !important;
+      font-size: clamp(12px, 1.1vw, 14px) !important;
+      line-height: 1.4 !important;
+    }
+
+    .manga-question {
+      margin: 0;
+      padding: 7px 10px;
+      border-left: 2px solid rgba(212, 184, 150, 0.6);
+      background: rgba(255, 255, 255, 0.05);
+      font-size: clamp(11px, 1.05vw, 13px);
+      line-height: 1.35;
+      font-style: italic;
+      color: rgba(245, 240, 232, 0.92);
+    }
+
+    .manga-final {
+      margin: auto 0 0;
+      padding-top: 8px;
+      border-top: 1px solid rgba(245, 240, 232, 0.16);
+      font-size: clamp(11px, 1vw, 12.5px);
+      line-height: 1.4;
+      color: rgba(212, 184, 150, 0.95);
+    }
+
+    /* HTML charts */
+    .chart-block {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chart-label {
+      margin: 0;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.5);
+    }
+
+    .hbar {
+      display: grid;
+      grid-template-columns: 86px 1fr 34px;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .hbar:focus-visible {
+      outline: 1px solid rgba(245, 240, 232, 0.5);
+      outline-offset: 2px;
+    }
+
+    .hbar .hbar-name {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.78);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hbar .hbar-track {
+      position: relative;
+      height: 10px;
+      border-radius: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .hbar .hbar-fill {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: 1px;
+      transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #storyPage.is-revealed .hbar .hbar-fill {
+      width: var(--w, 0%);
+    }
+
+    .hbar .hbar-val {
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      color: rgba(245, 240, 232, 0.65);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hbar.is-active .hbar-name {
+      color: #fff;
+    }
+
+    .hbar.is-active .hbar-track {
+      box-shadow: 0 0 0 1px rgba(245, 240, 232, 0.35);
+    }
+
+    .hbar-fill.f-support { background: linear-gradient(90deg, #7a4a8a, #c4b5fd); }
+    .hbar-fill.f-critical { background: linear-gradient(90deg, #1a6a68, #5eead4); }
+    .hbar-fill.f-mixed { background: linear-gradient(90deg, #5a5a58, #a8a29e); }
+    .hbar-fill.f-export { background: linear-gradient(90deg, #7a3a22, #d4b896); }
+    .hbar-fill.f-import { background: linear-gradient(90deg, #1a3a5c, #8ab0c8); }
+    .hbar-fill.f-shock { background: linear-gradient(90deg, rgba(94, 234, 212, 0.35), #5eead4); }
+
+    .chart-stack {
+      display: flex;
+      height: 14px;
+      width: 100%;
+      overflow: hidden;
+      border: 1px solid rgba(245, 240, 232, 0.15);
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .chart-stack span {
+      display: block;
+      height: 100%;
+      transition: flex 0.45s ease;
+    }
+
+    .chart-stack .s-support { background: #c4b5fd; }
+    .chart-stack .s-critical { background: #5eead4; }
+    .chart-stack .s-mixed { background: #a8a29e; }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+    }
+
+    .chart-legend button {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: rgba(245, 240, 232, 0.7);
+      font: inherit;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .chart-legend button.is-dim {
+      opacity: 0.35;
+    }
+
+    .chart-legend i {
+      width: 8px;
+      height: 8px;
+      border-radius: 1px;
+    }
+
+    .chart-legend .lg-support { background: #c4b5fd; }
+    .chart-legend .lg-critical { background: #5eead4; }
+    .chart-legend .lg-mixed { background: #a8a29e; }
+
+    .chart-readout {
+      margin: 0;
+      min-height: 2.6em;
+      font-size: clamp(11px, 1vw, 12.5px);
+      line-height: 1.4;
+      color: rgba(245, 240, 232, 0.8);
+    }
+
+    .vbars {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      align-items: end;
+      flex: 1 1 auto;
+      min-height: 72px;
+      padding-top: 4px;
+    }
+
+    .vbar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .vbar .vbar-col {
+      flex: 1 1 auto;
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      min-height: 36px;
+    }
+
+    .vbar .vbar-fill {
+      width: 100%;
+      height: 0;
+      background: linear-gradient(180deg, #5eead4, rgba(94, 234, 212, 0.15));
+      border: 1px solid rgba(94, 234, 212, 0.35);
+      transition: height 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #storyPage.is-revealed .vbar .vbar-fill {
+      height: var(--h, 40%);
+    }
+
+    .vbar.is-active .vbar-fill {
+      background: linear-gradient(180deg, #f5f0e8, rgba(212, 184, 150, 0.35));
+      border-color: rgba(245, 240, 232, 0.55);
+    }
+
+    .vbar .vbar-name {
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-align: center;
+      color: rgba(245, 240, 232, 0.65);
+      line-height: 1.2;
+    }
+
+    .vbar.is-active .vbar-name {
+      color: #fff;
+    }
+
+    .lens-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .lens-row button {
+      padding: 6px 6px;
+      border: 1px solid rgba(245, 240, 232, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(245, 240, 232, 0.72);
+      font: inherit;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      line-height: 1.25;
+    }
+
+    .lens-row button.is-active {
+      border-color: rgba(212, 184, 150, 0.6);
+      background: rgba(245, 240, 232, 0.1);
+      color: #fff;
+    }
+
+    .flow-steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+
+    .flow-steps button {
+      padding: 7px 4px;
+      border: 1px solid rgba(245, 240, 232, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(245, 240, 232, 0.75);
+      font: inherit;
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .flow-steps button.is-active {
+      border-color: rgba(212, 184, 150, 0.55);
+      background: rgba(212, 184, 150, 0.14);
+      color: #fff;
+    }
+
+    .top-metrics {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 10px;
+      align-items: stretch;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .metric-card {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-height: 0;
+    }
+
+    @media (max-width: 1100px) {
+      #storyPage {
+        width: min(440px, 48vw);
+      }
+    }
+
+    @media (max-width: 720px) {
+      #globeHud {
+        left: 12px;
+        top: 12px;
+        max-width: min(280px, calc(100vw - 24px));
+      }
+
+      #oilFilterPanel {
+        max-height: 55vh;
+      }
+
+      #storyPage {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <aside id="globeHud" aria-label="Globe controls">
+    <div class="hud-row">
+      <label class="hud-check">
+        <input type="checkbox" id="stopSpinning" />
+        <span>Stop spinning</span>
+      </label>
+      <button type="button" id="filterToggle" aria-expanded="false" aria-controls="oilFilterPanel">
+        Filter
+        <span class="filter-badge" id="filterBadge" data-count="0"></span>
+      </button>
+    </div>
+    <div id="oilFilterPanel" hidden>
+      <div class="filter-head">
+        <h3>Filters</h3>
+        <button type="button" class="filter-ghost" id="oilFilterClear">Clear all</button>
+      </div>
+      <p id="oilFilterMeta">Showing all flows</p>
+      <p id="oilFilterHint" hidden>Switch to the Oil map style to filter flows.</p>
+
+      <div class="filter-section" id="oilFilterBody">
+        <label class="filter-label" for="oilFilterSearch">Search</label>
+        <input id="oilFilterSearch" type="search" placeholder="Country…" autocomplete="off" />
+      </div>
+
+      <div class="filter-section">
+        <span class="filter-label">Media framing</span>
+        <div class="chip-row" id="oilFilterFramings"></div>
+      </div>
+
+      <div class="filter-section">
+        <span class="filter-label">Trade balance</span>
+        <div class="radio-row">
+          <label><input type="radio" name="oilTradeRole" value="all" checked /> All countries</label>
+          <label><input type="radio" name="oilTradeRole" value="exporter" /> Net exporters</label>
+          <label><input type="radio" name="oilTradeRole" value="importer" /> Net importers</label>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <span class="filter-label">Region</span>
+        <div class="chip-row" id="oilFilterRegions"></div>
+      </div>
+
+      <div class="filter-section">
+        <span class="filter-label">Coverage</span>
+        <div class="range-row">
+          <output id="oilArticlesOut">Min articles: 4</output>
+          <input type="range" id="oilArticlesMin" min="4" max="18" step="1" value="4" />
+        </div>
+        <div class="range-row" style="margin-top: 8px">
+          <output id="oilOutletsOut">Min outlets: 2</output>
+          <input type="range" id="oilOutletsMin" min="2" max="7" step="1" value="2" />
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <span class="filter-label">Layers</span>
+        <div class="layer-toggles">
+          <label><input type="checkbox" id="oilLayerFlows" checked /> Flow lines</label>
+          <label><input type="checkbox" id="oilLayerHeat" checked /> Trade heat map</label>
+          <label><input type="checkbox" id="oilLayerLabels" checked /> Place labels</label>
+          <label><input type="checkbox" id="oilLayerEvent" checked /> Vienna marker</label>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-head" style="margin-bottom: 0">
+          <span class="filter-label" style="margin: 0">Countries</span>
+          <span>
+            <button type="button" class="filter-ghost" id="oilCountriesAll">All</button>
+            ·
+            <button type="button" class="filter-ghost" id="oilCountriesNone">None</button>
+          </span>
+        </div>
+        <div id="oilFilterCountries"></div>
+      </div>
+    </div>
+  </aside>
+  <div id="rightPanels">
+    <div id="filters" class="hud-glass" data-panel>
+      <div class="panel-head">
+        <h3>Map style</h3>
+        <button type="button" class="panel-dismiss" aria-label="Hide Map style">×</button>
+      </div>
+    </div>
+    <details id="sequences" class="hud-glass" data-panel>
+      <button type="button" class="panel-dismiss" aria-label="Hide Sequences">×</button>
+      <summary>Sequences</summary>
+      <p class="note">Plays from idle into a saved shot. Click again to stop.</p>
+      <div id="sequenceControls"></div>
+    </details>
+    <details id="shot" class="hud-glass" data-panel>
+      <button type="button" class="panel-dismiss" aria-label="Hide Shot">×</button>
+      <summary>Shot</summary>
+      <label class="toggle"><input type="checkbox" id="editMode" /><span>Edit mode</span></label>
+      <label class="toggle"><input type="checkbox" id="legendEditMode" /><span>Legend edit</span></label>
+      <label class="toggle"><input type="checkbox" id="idleSpin" checked /><span>Spin globe</span></label>
+      <p class="note" id="editHelp" hidden>
+        Drag: move · Shift+drag: rotate · Ctrl+drag: roll · Alt+drag: spin globe · Wheel: zoom<br />
+        G move · R rotate · S zoom, then X / Y to lock an axis. Click or Enter to confirm, Esc or right-click to cancel.
+      </p>
+      <p class="note" id="legendEditShotHelp" hidden>
+        Legend: G move · R rotate (X/Y/Z) · S scale · B bend · F flip · sliders for all fields · Copy positions.
+      </p>
+      <p class="note" id="viewHelp">Drag spins the globe · Wheel zooms</p>
+      <div id="shotControls"></div>
+      <p class="note" id="altitudeReadout"></p>
+      <div class="actions">
+        <button id="copyShot">Copy shot</button>
+        <button id="resetShot">Reset</button>
+      </div>
+    </details>
+    <details id="appearance" class="hud-glass" data-panel>
+      <button type="button" class="panel-dismiss" aria-label="Hide Appearance">×</button>
+      <summary>Appearance</summary>
+
+      <h4>Background color</h4>
+      <div id="colorWheel"><div id="wheelHandle"></div></div>
+      <label>Brightness <input type="range" id="brightness" min="0" max="100" step="1" /><output id="brightnessValue"></output></label>
+      <div class="color-row">
+        <span id="swatch"></span>
+        <input id="hexInput" maxlength="7" spellcheck="false" />
+        <button class="small-button" id="copyBackground">Copy</button>
+      </div>
+
+      <h4>Color picker</h4>
+      <button class="wide-button" id="pickColor">Pick from screen</button>
+      <div class="color-row" id="pickedRow" hidden>
+        <span id="pickedSwatch"></span>
+        <code id="pickedHex"></code>
+        <button class="small-button" id="copyPicked">Copy</button>
+      </div>
+      <button class="wide-button" id="usePicked" hidden>Use as background</button>
+      <p id="pickerMessage" hidden></p>
+
+      <h4>Guides</h4>
+      <label class="toggle"><input type="checkbox" id="thirdsToggle" />Rule of thirds grid</label>
+
+      <div id="grainControls"></div>
+
+      <div class="actions">
+        <button id="copySettings">Copy settings</button>
+        <button id="resetSettings">Reset</button>
+      </div>
+    </details>
+  </div>
+  <div id="thirdsGrid">
+    <span class="vertical" style="left: 33.333%"></span>
+    <span class="vertical" style="left: 66.667%"></span>
+    <span class="horizontal" style="top: 33.333%"></span>
+    <span class="horizontal" style="top: 66.667%"></span>
+  </div>
+  <div id="objectOrigin" hidden></div>
+  <div id="modalStatus" hidden></div>
+  <div id="oilLegend" hidden aria-label="Oil trade and media framing legend">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <!-- Muted antique ramp — same family as the choropleth, less saturated. -->
+        <linearGradient id="oilTradeRamp" gradientUnits="userSpaceOnUse" x1="72" y1="78" x2="72" y2="22">
+          <stop offset="0%" stop-color="#1a3a5c" />
+          <stop offset="20%" stop-color="#5a7a98" />
+          <stop offset="40%" stop-color="#c5d0d8" />
+          <stop offset="50%" stop-color="#e8e2d6" />
+          <stop offset="62%" stop-color="#d4b896" />
+          <stop offset="80%" stop-color="#b06a3a" />
+          <stop offset="100%" stop-color="#7a3a22" />
+        </linearGradient>
+      </defs>
+      <g id="oilLegendRoot"></g>
+    </svg>
+  </div>
+  <div id="legendEditBar" hidden>
+    <p id="legendEditHelp">G / drag = Pos X·Y (place anywhere) · Shift+drag = radius · R + X/Y/Z · B bend · I invert bend · F flip · sliders below.</p>
+    <div class="row">
+      <button type="button" id="invertLegendBend">Invert bend</button>
+      <button type="button" id="flipLegendWord">Flip</button>
+      <button type="button" id="copyLegendLayout">Copy positions</button>
+      <button type="button" id="resetLegendLayout">Reset legend</button>
+    </div>
+    <div id="legendWordFields" hidden></div>
+    <p id="legendEditReadout"></p>
+  </div>
+  <div id="oilDetail" class="hud-glass" hidden></div>
+
+  <aside id="storyPage" class="is-hidden" aria-label="Follow the oil research story" aria-hidden="true">
+    <article class="manga-panel manga-panel-top">
+      <div class="panel-inner">
+        <div>
+          <p class="manga-kicker">GIS · Oil · Media</p>
+          <h2>Follow the oil. Follow the story.</h2>
+          <p class="manga-lede">
+            Can a country’s place in the oil economy explain—and anticipate—its media narratives?
+          </p>
+        </div>
+        <div class="top-metrics">
+          <div class="metric-card chart-block">
+            <p class="chart-label">Sampled frame mix · click to filter legend</p>
+            <div class="chart-stack" id="frameStack" role="img" aria-label="Frame mix stacked bar">
+              <span class="s-support" style="flex: 32" data-frame="supportive"></span>
+              <span class="s-critical" style="flex: 48" data-frame="critical"></span>
+              <span class="s-mixed" style="flex: 20" data-frame="mixed"></span>
+            </div>
+            <div class="chart-legend" id="frameLegend">
+              <button type="button" data-frame="supportive" class="is-on"><i class="lg-support"></i> Supportive 32%</button>
+              <button type="button" data-frame="critical" class="is-on"><i class="lg-critical"></i> Critical 48%</button>
+              <button type="button" data-frame="mixed" class="is-on"><i class="lg-mixed"></i> Mixed 20%</button>
+            </div>
+          </div>
+          <div class="metric-card chart-block">
+            <p class="chart-label">Trade balance in sample</p>
+            <button type="button" class="hbar is-active" data-balance="export">
+              <span class="hbar-name">Exporters</span>
+              <span class="hbar-track"><span class="hbar-fill f-export" style="--w:72%"></span></span>
+              <span class="hbar-val">9</span>
+            </button>
+            <button type="button" class="hbar" data-balance="import">
+              <span class="hbar-name">Importers</span>
+              <span class="hbar-track"><span class="hbar-fill f-import" style="--w:58%"></span></span>
+              <span class="hbar-val">11</span>
+            </button>
+            <p class="chart-readout" id="balanceReadout">Net exporters vs importers in the OPEC+ media sample.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="manga-panel manga-panel-mid">
+      <div class="panel-inner">
+        <p class="manga-kicker">01 · Beyond a sentiment chart</p>
+        <h2>Every headline has a geography</h2>
+        <p>
+          GIS links publisher location to economic conditions—layering trade, dependence, and framing to test whether
+          distant outlets tell similar stories because countries share interests.
+        </p>
+        <p class="manga-question">
+          Are countries connected more by shared economic interests than by physical proximity?
+        </p>
+        <div class="chart-block">
+          <p class="chart-label">Map lens · tap a view</p>
+          <div class="lens-row" id="storyViews">
+            <button type="button" class="is-active" data-view="exposure">Economic exposure</button>
+            <button type="button" data-view="narratives">Observed narratives</button>
+            <button type="button" data-view="agreement">Agreement &amp; surprises</button>
+          </div>
+          <div id="lensBars">
+            <button type="button" class="hbar is-active" data-lens="trade">
+              <span class="hbar-name">Oil trade</span>
+              <span class="hbar-track"><span class="hbar-fill f-export" style="--w:88%"></span></span>
+              <span class="hbar-val">high</span>
+            </button>
+            <button type="button" class="hbar" data-lens="depend">
+              <span class="hbar-name">Dependence</span>
+              <span class="hbar-track"><span class="hbar-fill f-import" style="--w:64%"></span></span>
+              <span class="hbar-val">mid</span>
+            </button>
+            <button type="button" class="hbar" data-lens="frame">
+              <span class="hbar-name">Framing</span>
+              <span class="hbar-track"><span class="hbar-fill f-critical" style="--w:76%"></span></span>
+              <span class="hbar-val">signal</span>
+            </button>
+          </div>
+          <p class="chart-readout" id="lensReadout">
+            Exposure: who imports or exports oil, and how dependent their economies are.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <div class="manga-split">
+      <article class="manga-panel manga-panel-bl">
+        <div class="panel-inner">
+          <p class="manga-kicker">02 · The next shock</p>
+          <h2>Early indicator?</h2>
+          <p class="chart-label">Hypothetical pattern strength · click a shock</p>
+          <div class="vbars" id="shockBars">
+            <button type="button" class="vbar is-active" data-shock="cut" style="--h:78%">
+              <span class="vbar-col"><span class="vbar-fill"></span></span>
+              <span class="vbar-name">Production<br />cut</span>
+            </button>
+            <button type="button" class="vbar" data-shock="disrupt" style="--h:92%">
+              <span class="vbar-col"><span class="vbar-fill"></span></span>
+              <span class="vbar-name">Supply<br />disrupt</span>
+            </button>
+            <button type="button" class="vbar" data-shock="price" style="--h:66%">
+              <span class="vbar-col"><span class="vbar-fill"></span></span>
+              <span class="vbar-name">Price<br />collapse</span>
+            </button>
+          </div>
+          <p class="chart-readout" id="shockReadout">
+            Cut: importers emphasize affordability; exporters emphasize stability.
+          </p>
+        </div>
+      </article>
+      <article class="manga-panel manga-panel-br">
+        <div class="panel-inner">
+          <p class="manga-kicker">03 · Implication</p>
+          <h2>Your news feed is global. Your view may still be local.</h2>
+          <p class="chart-label">Prediction path · step through</p>
+          <div class="flow-steps" id="flowSteps">
+            <button type="button" class="is-active" data-step="trade">Trade</button>
+            <button type="button" data-step="depend">Dependence</button>
+            <button type="button" data-step="ties">Ties</button>
+            <button type="button" data-step="frames">Frames</button>
+          </div>
+          <p class="chart-readout" id="flowReadout">
+            Oil trade position sets the baseline economic stake in a shock.
+          </p>
+          <p class="manga-final">
+            Not who tells the truth—which parts of the story may get the most attention.
+          </p>
+        </div>
+      </article>
+    </div>
+  </aside>
+
+  <a id="modelCredit" href="https://sketchfab.com/3d-models/antique-globe-78b47132c6be42bcb664545a69b380d9" target="_blank" rel="noopener">
+    "Antique Globe" by mtcollings · CC BY 4.0
+  </a>
+  <script src="main.js?v=77"></script>
+  <script src="stand.js?v=65"></script>
+  <script src="appearance.js?v=77"></script>
+  <script src="transform.js?v=65"></script>
+  <script src="sequence.js?v=65"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "title": "Oil trade balance",
+  "subtitle": "(exports \u2212 imports) / (exports + imports)",
+  "source": "Our World in Data \u00b7 U.S. EIA",
+  "stops": [
+    {
+      "value": -1,
+      "color": "#0c2c54",
+      "label": "Strong importer"
+    },
+    {
+      "value": -0.5,
+      "color": "#3878a8",
+      "label": "Moderate importer"
+    },
+    {
+      "value": 0,
+      "color": "#f5f0e8",
+      "label": "Balanced"
+    },
+    {
+      "value": 0.5,
+      "color": "#d9772a",
+      "label": "Moderate exporter"
+    },
+    {
+      "value": 1,
+      "color": "#8c2d0c",
+      "label": "Strong exporter"
+    },
+    {
+      "value": null,
+      "color": "#787c80",
+      "label": "No data"
+    }
+  ]
+}

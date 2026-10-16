@@ -1,0 +1,321 @@
+{
+  "event": {
+    "id": "opec-plus-2022-10-05",
+    "title": "OPEC+ production-cut announcement",
+    "date": "October 5, 2022",
+    "summary": "OPEC+ agreed to reduce oil-production targets by 2 million barrels per day.",
+    "place": "Vienna, Austria",
+    "lon": 16.3738,
+    "lat": 48.2082
+  },
+  "note": "Article counts and framing shares are a curated sample for exploration, based on widely reported coverage of the announcement. Replace with your full coded sample when ready. Framing describes sampled media coverage, not official government positions.",
+  "framings": {
+    "supportive": { "color": "#c4b5fd", "label": "Supportive of the cut" },
+    "critical": { "color": "#5eead4", "label": "Critical of the cut" },
+    "mixed": { "color": "#a8a29e", "label": "Mixed or neutral" }
+  },
+  "countries": [
+    {
+      "iso3": "USA",
+      "name": "United States",
+      "lon": -98.5,
+      "lat": 39.8,
+      "framing": "critical",
+      "articles": 18,
+      "outlets": 7,
+      "supportive": 15,
+      "critical": 70,
+      "neutral": 15,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts; Biden calls it shortsighted", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" },
+        { "title": "Oil climbs ahead of OPEC talks on supply cut", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "SAU",
+      "name": "Saudi Arabia",
+      "lon": 45.1,
+      "lat": 24.7,
+      "framing": "supportive",
+      "articles": 14,
+      "outlets": 5,
+      "supportive": 75,
+      "critical": 10,
+      "neutral": 15,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" },
+        { "title": "What the papers say about OPEC’s oil production cuts", "url": "https://www.agbi.com/energy/2022/10/what-the-papers-say-about-opecs-oil-production-cuts/", "outlet": "AGBI" }
+      ]
+    },
+    {
+      "iso3": "RUS",
+      "name": "Russia",
+      "lon": 37.6,
+      "lat": 55.8,
+      "framing": "supportive",
+      "articles": 11,
+      "outlets": 4,
+      "supportive": 70,
+      "critical": 10,
+      "neutral": 20,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "ARE",
+      "name": "United Arab Emirates",
+      "lon": 54.4,
+      "lat": 24.5,
+      "framing": "supportive",
+      "articles": 9,
+      "outlets": 4,
+      "supportive": 65,
+      "critical": 15,
+      "neutral": 20,
+      "links": [
+        { "title": "What the papers say about OPEC’s oil production cuts", "url": "https://www.agbi.com/energy/2022/10/what-the-papers-say-about-opecs-oil-production-cuts/", "outlet": "AGBI / The National" }
+      ]
+    },
+    {
+      "iso3": "GBR",
+      "name": "United Kingdom",
+      "lon": -1.5,
+      "lat": 52.5,
+      "framing": "critical",
+      "articles": 12,
+      "outlets": 5,
+      "supportive": 15,
+      "critical": 65,
+      "neutral": 20,
+      "links": [
+        { "title": "What the papers say about OPEC’s oil production cuts", "url": "https://www.agbi.com/energy/2022/10/what-the-papers-say-about-opecs-oil-production-cuts/", "outlet": "AGBI (FT / Daily Mail summary)" }
+      ]
+    },
+    {
+      "iso3": "DEU",
+      "name": "Germany",
+      "lon": 10.5,
+      "lat": 51.2,
+      "framing": "critical",
+      "articles": 10,
+      "outlets": 4,
+      "supportive": 10,
+      "critical": 70,
+      "neutral": 20,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts; Biden calls it shortsighted", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "FRA",
+      "name": "France",
+      "lon": 2.3,
+      "lat": 46.6,
+      "framing": "critical",
+      "articles": 8,
+      "outlets": 3,
+      "supportive": 15,
+      "critical": 60,
+      "neutral": 25,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "CHN",
+      "name": "China",
+      "lon": 104.2,
+      "lat": 35.9,
+      "framing": "mixed",
+      "articles": 7,
+      "outlets": 3,
+      "supportive": 30,
+      "critical": 25,
+      "neutral": 45,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "IND",
+      "name": "India",
+      "lon": 78.9,
+      "lat": 22.0,
+      "framing": "mixed",
+      "articles": 8,
+      "outlets": 4,
+      "supportive": 25,
+      "critical": 40,
+      "neutral": 35,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "JPN",
+      "name": "Japan",
+      "lon": 138.3,
+      "lat": 36.2,
+      "framing": "critical",
+      "articles": 6,
+      "outlets": 3,
+      "supportive": 10,
+      "critical": 65,
+      "neutral": 25,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "BRA",
+      "name": "Brazil",
+      "lon": -51.9,
+      "lat": -14.2,
+      "framing": "mixed",
+      "articles": 5,
+      "outlets": 2,
+      "supportive": 35,
+      "critical": 30,
+      "neutral": 35,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "KWT",
+      "name": "Kuwait",
+      "lon": 47.5,
+      "lat": 29.3,
+      "framing": "supportive",
+      "articles": 6,
+      "outlets": 2,
+      "supportive": 80,
+      "critical": 5,
+      "neutral": 15,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "IRQ",
+      "name": "Iraq",
+      "lon": 44.4,
+      "lat": 33.2,
+      "framing": "supportive",
+      "articles": 5,
+      "outlets": 2,
+      "supportive": 70,
+      "critical": 10,
+      "neutral": 20,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "NGA",
+      "name": "Nigeria",
+      "lon": 8.1,
+      "lat": 9.6,
+      "framing": "mixed",
+      "articles": 4,
+      "outlets": 2,
+      "supportive": 40,
+      "critical": 25,
+      "neutral": 35,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "CAN",
+      "name": "Canada",
+      "lon": -96.0,
+      "lat": 56.0,
+      "framing": "mixed",
+      "articles": 5,
+      "outlets": 3,
+      "supportive": 30,
+      "critical": 45,
+      "neutral": 25,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "AUS",
+      "name": "Australia",
+      "lon": 134.5,
+      "lat": -25.0,
+      "framing": "critical",
+      "articles": 4,
+      "outlets": 2,
+      "supportive": 15,
+      "critical": 60,
+      "neutral": 25,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "NOR",
+      "name": "Norway",
+      "lon": 10.0,
+      "lat": 62.0,
+      "framing": "mixed",
+      "articles": 4,
+      "outlets": 2,
+      "supportive": 35,
+      "critical": 30,
+      "neutral": 35,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "IRN",
+      "name": "Iran",
+      "lon": 53.7,
+      "lat": 32.4,
+      "framing": "supportive",
+      "articles": 5,
+      "outlets": 2,
+      "supportive": 75,
+      "critical": 5,
+      "neutral": 20,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "KOR",
+      "name": "South Korea",
+      "lon": 127.8,
+      "lat": 36.4,
+      "framing": "critical",
+      "articles": 5,
+      "outlets": 2,
+      "supportive": 10,
+      "critical": 65,
+      "neutral": 25,
+      "links": [
+        { "title": "Oil rises as OPEC+ agrees to deep cuts", "url": "https://www.reuters.com/business/energy/oil-climbs-ahead-opec-talks-supply-cut-2022-10-05/", "outlet": "Reuters" }
+      ]
+    },
+    {
+      "iso3": "ITA",
+      "name": "Italy",
+      "lon": 12.6,
+      "lat": 42.5,
+      "framing": "critical",
+      "articles": 5,
+      "outlets": 2,
+      "supportive": 15,
+      "critical": 60,
+      "neutral": 25,
+      "links": [
+        { "title": "OPEC+ agrees deep oil production cuts; Biden calls it shortsighted", "url": "https://www.reuters.com/business/energy/opec-heads-deep-supply-cuts-clash-with-us-2022-10-04/", "outlet": "Reuters" }
+      ]
+    }
+  ]
+}

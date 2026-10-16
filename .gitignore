@@ -1,0 +1,9 @@
+# Source archive (extracted model lives under models/)
+antique_globe.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
