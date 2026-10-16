@@ -25,20 +25,23 @@
       background: #3c5c8c;
     }
 
+    /* Dev menus — centered so they stay usable; story panels keep the right side. */
     #rightPanels {
       position: absolute;
-      top: 16px;
-      right: calc(16px + min(460px, 42vw) + 12px);
-      z-index: 12;
+      left: 50%;
+      top: 50%;
+      z-index: 20;
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
-      gap: 12px;
-      max-height: calc(100% - 32px);
+      align-items: stretch;
+      gap: 10px;
+      width: min(280px, calc(100vw - 32px));
+      max-height: min(78vh, calc(100% - 48px));
       overflow-y: auto;
       overflow-x: hidden;
-      padding-right: 2px;
-      max-width: 280px;
+      padding: 2px;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
     }
 
     #rightPanels > [hidden] {
@@ -1215,10 +1218,6 @@
     }
 
     /* Manga story page — full right column, translucent, interactive HTML charts. */
-    #rightPanels {
-      display: none !important;
-    }
-
     #storyPage {
       position: absolute;
       top: 14px;
@@ -2030,9 +2029,9 @@
   <a id="modelCredit" href="https://sketchfab.com/3d-models/antique-globe-78b47132c6be42bcb664545a69b380d9" target="_blank" rel="noopener">
     "Antique Globe" by mtcollings · CC BY 4.0
   </a>
-  <script src="main.js?v=77"></script>
+  <script src="main.js?v=78"></script>
   <script src="stand.js?v=65"></script>
-  <script src="appearance.js?v=77"></script>
+  <script src="appearance.js?v=78"></script>
   <script src="transform.js?v=65"></script>
   <script src="sequence.js?v=65"></script>
 </body>
