@@ -25,27 +25,122 @@
       background: #3c5c8c;
     }
 
-    /* Dev menus — centered so they stay usable; story panels keep the right side. */
+    /* Dev menus — top-center dropdown bar over the globe. */
+    #devMenuBackdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 35;
+      display: none;
+      background: rgba(4, 14, 30, 0.55);
+      backdrop-filter: blur(2px);
+      cursor: pointer;
+    }
+
+    body:has(#rightPanels details[open]) #devMenuBackdrop {
+      display: block;
+    }
+
     #rightPanels {
       position: absolute;
       left: 50%;
-      top: 50%;
-      z-index: 20;
+      top: 12px;
+      z-index: 40;
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 10px;
-      width: min(280px, calc(100vw - 32px));
-      max-height: min(78vh, calc(100% - 48px));
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 2px;
-      transform: translate(-50%, -50%);
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 6px;
+      width: max-content;
+      max-width: min(960px, calc(100vw - 24px));
+      max-height: none;
+      overflow: visible;
+      padding: 0;
+      transform: translateX(-50%);
       pointer-events: auto;
     }
 
     #rightPanels > [hidden] {
       display: none !important;
+    }
+
+    #rightPanels > details.hud-glass {
+      position: relative;
+      flex: 0 0 auto;
+      width: auto;
+      max-height: none;
+      overflow: visible;
+      padding: 0;
+      border-radius: 3px;
+    }
+
+    #rightPanels > details.hud-glass > summary {
+      padding: 9px 32px 9px 14px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(245, 240, 232, 0.92);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      list-style: none;
+    }
+
+    #rightPanels > details.hud-glass > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    #rightPanels > details.hud-glass > summary::after {
+      content: "";
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      border-right: 1.5px solid rgba(245, 240, 232, 0.65);
+      border-bottom: 1.5px solid rgba(245, 240, 232, 0.65);
+      transform: translateY(-65%) rotate(45deg);
+      transition: transform 0.2s ease;
+    }
+
+    #rightPanels > details.hud-glass[open] > summary::after {
+      transform: translateY(-20%) rotate(225deg);
+    }
+
+    #rightPanels > details.hud-glass[open] {
+      z-index: 2;
+      border-color: rgba(245, 240, 232, 0.45);
+      background: rgba(8, 24, 46, 0.94);
+    }
+
+    #rightPanels .dropdown-body {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 50%;
+      z-index: 3;
+      box-sizing: border-box;
+      width: min(300px, calc(100vw - 24px));
+      max-height: min(72vh, 620px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 12px;
+      border: 1px solid rgba(245, 240, 232, 0.28);
+      border-radius: 3px;
+      background: rgba(8, 24, 46, 0.96);
+      backdrop-filter: blur(14px) saturate(1.1);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+      transform: translateX(-50%);
+    }
+
+    #rightPanels #appearance .dropdown-body {
+      width: min(320px, calc(100vw - 24px));
+    }
+
+    #rightPanels #filters .dropdown-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .panel-head {
@@ -166,25 +261,11 @@
     }
 
     #filters {
-      display: flex;
-      flex-direction: column;
-      flex: 0 0 auto;
-      gap: 6px;
-      padding: 12px;
       font-size: 13px;
       letter-spacing: 0.06em;
-      overflow: visible;
     }
 
-    #filters h3 {
-      margin: 0 0 4px;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: rgba(245, 240, 232, 0.55);
-    }
-
+    #filters .dropdown-body button,
     #filters button {
       padding: 8px 12px;
       border: 1px solid rgba(245, 240, 232, 0.2);
@@ -552,11 +633,14 @@
 
     #appearance, #shot, #sequences {
       box-sizing: border-box;
-      width: 264px;
-      overflow-y: auto;
-      padding: 12px;
       font-size: 13px;
       letter-spacing: 0.04em;
+    }
+
+    #appearance .dropdown-body,
+    #shot .dropdown-body,
+    #sequences .dropdown-body {
+      width: min(300px, calc(100vw - 24px));
     }
 
     #appearance [hidden], #shot [hidden], #sequences [hidden] {
@@ -1789,71 +1873,76 @@
       </div>
     </div>
   </aside>
+  <div id="devMenuBackdrop" aria-hidden="true"></div>
   <div id="rightPanels">
-    <div id="filters" class="hud-glass" data-panel>
-      <div class="panel-head">
-        <h3>Map style</h3>
-        <button type="button" class="panel-dismiss" aria-label="Hide Map style">×</button>
-      </div>
-    </div>
+    <details id="filters" class="hud-glass" data-panel>
+      <button type="button" class="panel-dismiss" aria-label="Hide Map style">×</button>
+      <summary>Map style</summary>
+      <div class="dropdown-body"></div>
+    </details>
     <details id="sequences" class="hud-glass" data-panel>
       <button type="button" class="panel-dismiss" aria-label="Hide Sequences">×</button>
       <summary>Sequences</summary>
-      <p class="note">Plays from idle into a saved shot. Click again to stop.</p>
-      <div id="sequenceControls"></div>
+      <div class="dropdown-body">
+        <p class="note">Plays from idle into a saved shot. Click again to stop.</p>
+        <div id="sequenceControls"></div>
+      </div>
     </details>
     <details id="shot" class="hud-glass" data-panel>
       <button type="button" class="panel-dismiss" aria-label="Hide Shot">×</button>
       <summary>Shot</summary>
-      <label class="toggle"><input type="checkbox" id="editMode" /><span>Edit mode</span></label>
-      <label class="toggle"><input type="checkbox" id="legendEditMode" /><span>Legend edit</span></label>
-      <label class="toggle"><input type="checkbox" id="idleSpin" checked /><span>Spin globe</span></label>
-      <p class="note" id="editHelp" hidden>
-        Drag: move · Shift+drag: rotate · Ctrl+drag: roll · Alt+drag: spin globe · Wheel: zoom<br />
-        G move · R rotate · S zoom, then X / Y to lock an axis. Click or Enter to confirm, Esc or right-click to cancel.
-      </p>
-      <p class="note" id="legendEditShotHelp" hidden>
-        Legend: G move · R rotate (X/Y/Z) · S scale · B bend · F flip · sliders for all fields · Copy positions.
-      </p>
-      <p class="note" id="viewHelp">Drag spins the globe · Wheel zooms</p>
-      <div id="shotControls"></div>
-      <p class="note" id="altitudeReadout"></p>
-      <div class="actions">
-        <button id="copyShot">Copy shot</button>
-        <button id="resetShot">Reset</button>
+      <div class="dropdown-body">
+        <label class="toggle"><input type="checkbox" id="editMode" /><span>Edit mode</span></label>
+        <label class="toggle"><input type="checkbox" id="legendEditMode" /><span>Legend edit</span></label>
+        <label class="toggle"><input type="checkbox" id="idleSpin" checked /><span>Spin globe</span></label>
+        <p class="note" id="editHelp" hidden>
+          Drag: move · Shift+drag: rotate · Ctrl+drag: roll · Alt+drag: spin globe · Wheel: zoom<br />
+          G move · R rotate · S zoom, then X / Y to lock an axis. Click or Enter to confirm, Esc or right-click to cancel.
+        </p>
+        <p class="note" id="legendEditShotHelp" hidden>
+          Legend: G move · R rotate (X/Y/Z) · S scale · B bend · F flip · sliders for all fields · Copy positions.
+        </p>
+        <p class="note" id="viewHelp">Drag spins the globe · Wheel zooms</p>
+        <div id="shotControls"></div>
+        <p class="note" id="altitudeReadout"></p>
+        <div class="actions">
+          <button id="copyShot">Copy shot</button>
+          <button id="resetShot">Reset</button>
+        </div>
       </div>
     </details>
     <details id="appearance" class="hud-glass" data-panel>
       <button type="button" class="panel-dismiss" aria-label="Hide Appearance">×</button>
       <summary>Appearance</summary>
+      <div class="dropdown-body">
+        <h4>Background color</h4>
+        <div id="colorWheel"><div id="wheelHandle"></div></div>
+        <label>Brightness <input type="range" id="brightness" min="0" max="100" step="1" /><output id="brightnessValue"></output></label>
+        <div class="color-row">
+          <span id="swatch"></span>
+          <input id="hexInput" maxlength="7" spellcheck="false" />
+          <button class="small-button" id="copyBackground">Copy</button>
+        </div>
 
-      <h4>Background color</h4>
-      <div id="colorWheel"><div id="wheelHandle"></div></div>
-      <label>Brightness <input type="range" id="brightness" min="0" max="100" step="1" /><output id="brightnessValue"></output></label>
-      <div class="color-row">
-        <span id="swatch"></span>
-        <input id="hexInput" maxlength="7" spellcheck="false" />
-        <button class="small-button" id="copyBackground">Copy</button>
-      </div>
+        <h4>Color picker</h4>
+        <button class="wide-button" id="pickColor">Pick from screen</button>
+        <div class="color-row" id="pickedRow" hidden>
+          <span id="pickedSwatch"></span>
+          <code id="pickedHex"></code>
+          <button class="small-button" id="copyPicked">Copy</button>
+        </div>
+        <button class="wide-button" id="usePicked" hidden>Use as background</button>
+        <p id="pickerMessage" hidden></p>
 
-      <h4>Color picker</h4>
-      <button class="wide-button" id="pickColor">Pick from screen</button>
-      <div class="color-row" id="pickedRow" hidden>
-        <span id="pickedSwatch"></span>
-        <code id="pickedHex"></code>
-        <button class="small-button" id="copyPicked">Copy</button>
-      </div>
-      <button class="wide-button" id="usePicked" hidden>Use as background</button>
-      <p id="pickerMessage" hidden></p>
+        <h4>Guides</h4>
+        <label class="toggle"><input type="checkbox" id="thirdsToggle" />Rule of thirds grid</label>
 
-      <h4>Guides</h4>
-      <label class="toggle"><input type="checkbox" id="thirdsToggle" />Rule of thirds grid</label>
+        <div id="grainControls"></div>
 
-      <div id="grainControls"></div>
-
-      <div class="actions">
-        <button id="copySettings">Copy settings</button>
-        <button id="resetSettings">Reset</button>
+        <div class="actions">
+          <button id="copySettings">Copy settings</button>
+          <button id="resetSettings">Reset</button>
+        </div>
       </div>
     </details>
   </div>
@@ -2029,9 +2118,9 @@
   <a id="modelCredit" href="https://sketchfab.com/3d-models/antique-globe-78b47132c6be42bcb664545a69b380d9" target="_blank" rel="noopener">
     "Antique Globe" by mtcollings · CC BY 4.0
   </a>
-  <script src="main.js?v=78"></script>
+  <script src="main.js?v=79"></script>
   <script src="stand.js?v=65"></script>
-  <script src="appearance.js?v=78"></script>
+  <script src="appearance.js?v=79"></script>
   <script src="transform.js?v=65"></script>
   <script src="sequence.js?v=65"></script>
 </body>

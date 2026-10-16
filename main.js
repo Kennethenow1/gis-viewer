@@ -1629,7 +1629,7 @@ for (const style of mapStyles) {
   const button = document.createElement("button");
   button.textContent = style.name;
   button.addEventListener("click", () => applyMapStyle(style));
-  filters.appendChild(button);
+  (filters.querySelector(".dropdown-body") || filters).appendChild(button);
   buttons.push(button);
 }
 
@@ -1674,6 +1674,25 @@ document.querySelectorAll("#rightPanels .panel-dismiss").forEach((btn) => {
     event.stopPropagation();
     const panel = btn.closest("[data-panel]");
     if (panel) panel.hidden = true;
+  });
+});
+
+// Top-center dropdowns: one open at a time; backdrop click closes.
+const rightPanelsRoot = document.getElementById("rightPanels");
+const devMenuBackdrop = document.getElementById("devMenuBackdrop");
+
+rightPanelsRoot?.querySelectorAll("details").forEach((detail) => {
+  detail.addEventListener("toggle", () => {
+    if (!detail.open) return;
+    rightPanelsRoot.querySelectorAll("details").forEach((other) => {
+      if (other !== detail) other.open = false;
+    });
+  });
+});
+
+devMenuBackdrop?.addEventListener("click", () => {
+  rightPanelsRoot?.querySelectorAll("details").forEach((detail) => {
+    detail.open = false;
   });
 });
 
